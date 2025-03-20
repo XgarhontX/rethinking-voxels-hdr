@@ -130,7 +130,7 @@ void main() {
 }
 #endif
 
-
+// entity light clumping
 #ifdef CSH_A
 #if VX_VOL_SIZE == 0
     const ivec3 workGroups = ivec3(3, 2, 3);

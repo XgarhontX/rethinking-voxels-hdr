@@ -180,6 +180,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
             if (length(voxelStart.xyz - hitPos) < 49.0 && getDistanceField(hitPos) < 0.1) {
                 // do lighting on the reflected surface
                 vec3 hitNormal = normalize(distanceFieldGradient(hitPos) + vec3(0.000001, -0.0000041, 0.0000003));
+                if (any(isnan(hitNormal))) hitNormal = -voxelVector;
                 int occupancyData = imageLoad(occupancyVolume, ivec3(hitPos + 0.5 * voxelVolumeSize - 0.1 * hitNormal)).r;
                 vec4 voxelCol = getColor(hitPos - 0.1 * hitNormal);
                 #if defined REALTIME_SHADOWS && defined OVERWORLD
@@ -195,20 +196,19 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                 float RNdotS = dot(hitNormal, mat3(gbufferModelViewInverse) * sunVec);
                 vec3 blockLight = readSurfaceVoxelBlocklight(hitPos, hitNormal);
                 #ifdef GI
-                    vec3 giLight = readIrradianceCache(hitPos, hitNormal);
-                    vec3 ambientColorM = vec3(0);
+                    vec3 ambientColorM = readIrradianceCache(hitPos, hitNormal);
                 #else
-                    const float giLight = 0.0;
                     vec3 ambientColorM = ambientColor;
                 #endif
-                voxelCol.rgb *= skyLight * ambientColorM + max(0.0, RNdotS + 0.1) * sunShadow * lightColor + blockLight + giLight;
+                voxelCol.rgb *= skyLight * ambientColorM + max(0.0, RNdotS + 0.1) * sunShadow * lightColor + blockLight;
 
                 vec3 playerHitPos = hitPos - fractCamPos;
                 float skyFade = 0.0;
                 DoFog(voxelCol.rgb, skyFade, length(playerHitPos), playerHitPos, RVdotU, RVdotS, dither);
-
-                reflection.rgb = mix(voxelCol.rgb, reflection.rgb, reflection.a);
-                reflection.a += (1.0 - reflection.a) * voxelCol.a;
+                if (!any(isnan(reflection))) {
+                    reflection.rgb = mix(voxelCol.rgb, reflection.rgb, reflection.a);
+                    reflection.a += (1.0 - reflection.a) * voxelCol.a;
+                }
             }
         }
         // End Step 2.5

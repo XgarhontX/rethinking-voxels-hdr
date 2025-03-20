@@ -40,6 +40,7 @@ void main() {
         writeColors[k] = (all(lessThan(prevCoords, voxelVolumeSize)) && all(greaterThanEqual(prevCoords, ivec3(0)))) ? imageLoad(irradianceCacheI, prevCoords + ivec3(0, k * voxelVolumeSize.y, 0)) : vec4(0);
     }
     writeColors[0] *= 0.99; // GI accumulation falloff
+    if (any(isnan(writeColors[0]))) writeColors[0] = vec4(0);
     barrier();
     memoryBarrierImage();
     for (int k = 0; k < 2; k++) {
@@ -220,7 +221,7 @@ void main() {
     memoryBarrierShared();
     ivec3 coords = ivec3(gl_GlobalInvocationID);
     vec3 normal = vec3(0);
-    vec3 vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.51, 0.49, 0.502);
+    vec3 vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.41, 0.49, 0.502);
     vec3 meanPos = vec3(gl_WorkGroupID) * 8 + 4 - 0.5 * voxelVolumeSize;
 
     bool insideFrustrum = true;
@@ -279,6 +280,7 @@ void main() {
     barrier();
     memoryBarrierShared();
     bool participateInSorting = index < MAX_LIGHT_COUNT/2;
+
     #include "/lib/misc/prepare4_BM_sort.glsl"
     
     vec3 origLightPos = vec3(0);
@@ -319,12 +321,27 @@ void main() {
                 float ndotl = ndotl0 * lightBrightness;
                 vec4 rayHit1 = coneTrace(vxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, 0.4 / dirLen, dither);
                 if (rayHit1.w > 0.01) {
+                    #ifdef TRANSLUCENT_LIGHT_TINT
+                        vec3 translucentNormal = vec3(0);
+                        vec3 translucentPos = voxelTrace(
+                            vxPos,
+                            dir,
+                            translucentNormal,
+                            1<<8
+                        ).xyz;
+                        vec3 translucentCol = vec3(1.0);
+                        if (length(translucentPos - vxPos) < dirLen - 1) {
+                            translucentCol = getColor(translucentPos - 0.1 * translucentNormal).rgb;
+                        }
+                    #endif
                     vec3 lightColor = lightCols[thisLightIndex];
                     float totalBrightness = ndotl
                         * distanceFalloff(dirLen / (thisTraceLen * LIGHT_TRACE_LENGTH))
                         * lightBrightness;
                     writeColor += lightColor
-                        * rayHit1.rgb
+                    #ifdef TRANSLUCENT_LIGHT_TINT
+                        * translucentCol
+                    #endif
                         * rayHit1.w
                         * totalBrightness;
                     int thisWeight = int(10000.5 * length(lightColor) * totalBrightness);
@@ -357,7 +374,7 @@ void main() {
 
     layout(local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
 
-    layout(rgba16f) uniform image3D irradianceCacheI;
+    layout(rgba16f) uniform volatile image3D irradianceCacheI;
     #include "/lib/vx/SSBOs.glsl"
     #include "/lib/vx/voxelReading.glsl"
     #include "/lib/util/random.glsl"
@@ -423,7 +440,7 @@ void main() {
         memoryBarrierShared();
         ivec3 coords = ivec3(gl_GlobalInvocationID);
         vec3 normal = vec3(0);
-        vec3 vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.51, 0.49, 0.502);
+        vec3 vxPos = coords - 0.5 * voxelVolumeSize + vec3(0.49, 0.51, 0.502);
         bool insideFrustrum = true;
         for (int k = 0; k < 5; k++) {
             insideFrustrum = (insideFrustrum && dot(vxPos, frustrumSides[k]) > -10.0);
@@ -431,7 +448,8 @@ void main() {
 
         if (insideFrustrum) {
             float thisDFval = getDistanceField(vxPos);
-            if (thisDFval < 0.7) {
+            int thisOccupancy = imageLoad(occupancyVolume, ivec3(vxPos + 0.5 * voxelVolumeSize)).r;
+            if (thisDFval < 0.7 || (thisOccupancy & 1<<8) != 0) {
                 activeLocs[atomicAdd(activeCount, 1)] = coords;
             } else {
                 vec4 GILight = vec4(0.0);
@@ -464,6 +482,7 @@ void main() {
                 maxDFVal = max(max(dplus, dminus), maxDFVal);
             }
             normal = normalize(normal);
+            if (any(isnan(normal))) normal = vec3(0);
             if (maxDFVal > 0.1 && length(normal) > 0.5) {
                 vec4 GILight = imageLoad(irradianceCacheI, coords);
                 float weight = 1.0;
@@ -482,8 +501,7 @@ void main() {
                 vxPos -= min(0.3, thisDFval - 0.1) * normal;
                 vec4 ambientContribution = vec4(0);
                 for (int sampleNum = 0; sampleNum < GI_SAMPLE_COUNT; sampleNum++) {
-                    vec3 dir = randomSphereSample();
-                    if (dot(dir, normal) < 0.0) dir = -dir;
+                    vec3 dir = normalWeightedHemishpereSample(normal);
                     float ndotl = dot(dir, normal);
                     vec3 hitPos = rayTrace(vxPos, LIGHT_TRACE_LENGTH * dir, dither);
                     vec3 translucentNormal;
@@ -499,15 +517,18 @@ void main() {
                         vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
                     #endif
                     vec3 hitCol = vec3(0);
-                    if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5) {
+                    if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5 && infnorm(hitPos / voxelVolumeSize) < 0.5) {
                         vec3 hitNormal = vec3(0);
                         for (int k = 0; k < 3; k++) {
                             hitNormal[k] = getDistanceField(hitPos + mat3(0.5)[k]) - getDistanceField(hitPos - mat3(0.5)[k]);
                         }
                         hitNormal = normalize(hitNormal);
                         vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * hitNormal + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
-                        vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * voxelVolumeSize - vec3(0.5)));
-                        vec3 hitGIlight = min(hitGIColor.rgb / max(hitGIColor.a, 0.0001), vec3(1));
+                        vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * hitNormal + 0.5 * voxelVolumeSize - vec3(0.5)));
+                        vec3 hitGIlight = hitGIColor.rgb / max(hitGIColor.a, 0.0001);
+                        if (any(greaterThan(hitGIlight, vec3(1.0)))) {
+                            hitGIlight = vec3(0.0);
+                        }
                         if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
                         #if defined REALTIME_SHADOWS && defined OVERWORLD
                             vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
@@ -523,12 +544,13 @@ void main() {
                     }
                     vec3 hitContrib = hitCol * translucentCol.xyz * ndotl;
                     if (all(greaterThanEqual(ambientHitCol, vec3(0)))) ambientContribution += vec4(ambientHitCol * translucentCol.xyz, 1.0) * ndotl;
-                    if (all(greaterThanEqual(hitContrib, vec3(0)))) GILight += vec4(hitContrib, ndotl);
+                    if (all(greaterThanEqual(hitContrib, vec3(0)))) GILight += vec4(hitContrib, 1.0);
                 }
                 GILight += min(ambientContribution, vec4(ambientColor * 2.0, 1.0) * ambientContribution.a);
+                if (any(isnan(GILight))) GILight = vec4(0);
                 imageStore(irradianceCacheI, coords, GILight);
             } else {
-                imageStore(irradianceCacheI, coords, vec4(0.0));
+                imageStore(irradianceCacheI, coords, vec4(0));
             }
         }
     #endif

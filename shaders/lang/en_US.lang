@@ -660,6 +660,10 @@ value.PIXEL_SCALE.3=4x
 value.PIXEL_SCALE.4=8x
 value.PIXEL_SCALE.5=16x
 
+option.TEXTURE_RES=Fallback Resolution
+option.TEXTURE_RES.comment=Texture resolution that will be used where pixelated effects are calculated without having texture coordinates, such as blocklight.
+suffix.TEXTURE_RES=/Block
+
 option.BLOOM=Bloom
 option.BLOOM.comment=Enables blurry glow from bright objects and humidity.
 
@@ -1183,7 +1187,7 @@ option.SLANTED_BLOCK_EDGES=Slanted Block Edges
 option.SLANTED_BLOCK_EDGES.comment=Tilts face normals of full blocks outwards if at their edges if there is no block next to them.
 
 option.INTERACTIVE_WATER=Interactive Water Waves
-option.INTERACTIVE_WATER.comment=Allows players and entities that are crossing a water surface to produce waves on that surface. Only works with Unbound water waves.
+option.INTERACTIVE_WATER.comment=Makes water waves adapt to their surroundings by having smaller waves in smaller bodies of water. Only works with Unbound water waves.
 
 option.WATER_BUMP_INTERACTIVE=Interactive Water Bumpiness
 option.WATER_BUMP_INTERACTIVE.comment=Controls the wave strength of interactive water waves.

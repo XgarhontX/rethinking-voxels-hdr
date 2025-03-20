@@ -82,7 +82,7 @@ bool isEmissive(int mat) {
         mat == 10572 || // dragon egg
         mat == 10576 || // lit smoker
         mat == 10580 || // lit blast furnace
-        mat == 10584 || // lit candles
+        (mat >= 10900 && mat < 10924) || // lit candles
         mat == 10592 || // respawn anchor
         mat == 10596 || // redstone wire
         mat == 10604 || // lit redstone torch
@@ -112,13 +112,17 @@ bool isEmissive(int mat) {
         mat == 50004 || // lightning bolt
         mat == 50010 || // glow item frame
         mat == 50020 || // blaze
+        #ifdef EXPLODING_CREEPER
+        mat == 50024 || // creeper
+        #endif
         mat == 50048 || // glow squid
         mat == 50052 || // magma cube
         mat == 50072 || // experience orb
         mat == 50080 || // allay
         mat == 50088 || // entity flame
         mat == 50116 || // TNT and TNT minecart
-        mat == 35917    // everything else
+        mat == 1235  || // fallback with hardcoded color
+        mat == 10028    // fallback with detected color
     );
 }
 
@@ -367,7 +371,18 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(FURNACE_COL_R, FURNACE_COL_G, FURNACE_COL_B);
             #endif
             break;
-        case 10584: // lit candles
+        case 10900:
+        case 10902:
+        case 10904:
+        case 10906:
+        case 10908:
+        case 10910:
+        case 10912:
+        case 10914:
+        case 10916:
+        case 10918:
+        case 10920:
+        case 10922: // lit candles
             #ifdef HARDCODED_CANDLE_COL
             lightcol = vec3(CANDLE_COL_R, CANDLE_COL_G, CANDLE_COL_B);
             #endif
@@ -493,6 +508,13 @@ vec3 getLightCol(int mat) {
             lightcol = vec3(BLAZE_COL_R, BLAZE_COL_G, BLAZE_COL_B);
             #endif
             break;
+        #ifdef EXPLODING_CREEPER
+        case 50024: // creeper
+            #ifdef HARDCODED_CREEPER_COL
+            lightcol = vec3(EXPLODING_COL_R, EXPLODING_COL_G, EXPLODING_COL_B);
+            #endif
+            break;
+        #endif
         case 50048: // glow squid
             #ifdef HARDCODED_SQUID_COL
             lightcol = vec3(SQUID_COL_R, SQUID_COL_G, SQUID_COL_B);
@@ -505,7 +527,7 @@ vec3 getLightCol(int mat) {
             break;
         case 50116: // TNT
             #ifdef HARDCODED_TNT_COL
-            lightcol = vec3(TNT_COL_R, TNT_COL_G, TNT_COL_B);
+            lightcol = vec3(EXPLODING_COL_R, EXPLODING_COL_G, EXPLODING_COL_B);
             #endif
             break;
     }
@@ -694,7 +716,18 @@ int getLightLevel(int mat) {
         case 10580: // lit blast furnace
             lightlevel = BRIGHTNESS_FURNACE;
             break;
-        case 10584: // lit candles
+        case 10900:
+        case 10902:
+        case 10904:
+        case 10906:
+        case 10908:
+        case 10910:
+        case 10912:
+        case 10914:
+        case 10916:
+        case 10918:
+        case 10920:
+        case 10922: // lit candles
             lightlevel = BRIGHTNESS_CANDLE;
             break;
         case 10592: // respawn anchor
@@ -775,6 +808,9 @@ int getLightLevel(int mat) {
             break;
         case 50020: // blaze
             lightlevel = BRIGHTNESS_BLAZE;
+            break;
+        case 50024:
+            lightlevel = BRIGHTNESS_CREEPER;
             break;
         case 50048: // glow squid
             lightlevel = BRIGHTNESS_SQUID;

@@ -17,6 +17,24 @@ layout(rgba16f) uniform image2D colorimg12;
 #include "/lib/util/random.glsl"
 #include "/lib/vx/irradianceCache.glsl"
 
+#ifdef DO_PIXELATION_EFFECTS
+    #if PIXEL_SCALE == -2
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 4.0
+    #elif PIXEL_SCALE == -1
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 2.0
+    #elif PIXEL_SCALE == 2
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.5
+    #elif PIXEL_SCALE == 3
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.25
+    #elif PIXEL_SCALE == 4
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.125
+    #elif PIXEL_SCALE == 5
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.0625
+    #else // 1 or out of range
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 1.0
+    #endif
+#endif
+
 shared vec3 readColors[14][14];
 #ifdef BLOCKLIGHT_HIGHLIGHT
     shared vec3 readSpeculars[14][14];
@@ -97,6 +115,11 @@ void main() {
         vec4 clipPos = vec4((texelCoord + 0.5) / view, 1.0 - normalDepthData.a, 1.0) * 2.0 - 1.0;
         vec4 playerPos = gbufferModelViewInverse * (gbufferProjectionInverse * clipPos);
         vec3 vxPos = playerPos.xyz / playerPos.w + fractCamPos;
+        #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
+            vxPos = floor(vxPos * PIXEL_TEXEL_SCALE + 0.5 * normalDepthData.xyz) / PIXEL_TEXEL_SCALE + 0.5 / PIXEL_TEXEL_SCALE;
+            float lPlayerPos = length(playerPos.xyz);
+        #endif
+        playerPos.xyz = (vxPos - fractCamPos) * playerPos.w;
         playerPos.xyz += playerPos.w * (fractCamPosOffset + floorCamPosOffset);
         vec4 prevClipPos = gbufferPreviousProjection * (gbufferPreviousModelView * playerPos);
         prevClipPos = prevClipPos / prevClipPos.w * 0.5 + 0.5;
@@ -137,12 +160,26 @@ void main() {
                         ))
                     ) / float(BLOCKLIGHT_RESOLUTION);
                 texCoordOffset = c + coffset - localLrTexCoord;
+                vec4 newNormalDepthData = normalDepthDatas[c.x][c.y];
+                #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
+                    vec2 newTexelCoord = texelCoord + texCoordOffset * BLOCKLIGHT_RESOLUTION;
+                    vec4 newClipPos = vec4((newTexelCoord + 0.5) / view, 1.0 - newNormalDepthData.a, 1.0) * 2.0 - 1.0;
+                    vec4 newPlayerPos = gbufferModelViewInverse * (gbufferProjectionInverse * newClipPos);
+                    vec3 newVxPos = newPlayerPos.xyz / newPlayerPos.w + fractCamPos;
+                    newVxPos = floor(newVxPos * PIXEL_TEXEL_SCALE + 0.5 * newNormalDepthData.xyz) / PIXEL_TEXEL_SCALE + 0.5 / PIXEL_TEXEL_SCALE;
+                #endif
+
                 float weight = max(1e-5, 1.0 - 5.0 * (
-                        length(normalDepthData - normalDepthDatas[c.x][c.y])
+                        length(normalDepthData - newNormalDepthData)
                         #ifdef BLOCKLIGHT_HIGHLIGHT
                             + 3 * abs(thisSmoothness - smoothnesses[c.x][c.y])
                         #endif
-                    )) * exp(-dot(texCoordOffset, texCoordOffset)*0.8);
+                    )) * exp(
+                        -dot(texCoordOffset, texCoordOffset)*0.8
+                        #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
+                            - 2.0 * PIXEL_TEXEL_SCALE / lPlayerPos * length(vxPos - newVxPos - dot(playerPos.xyz, vxPos - newVxPos) / pow2(lPlayerPos) * playerPos.xyz)
+                        #endif
+                    );
                 vec3 thisCol = readColors[c.x][c.y];
                 writeColor += thisCol * weight;
                 colorBounds[0] = min(colorBounds[0], thisCol);

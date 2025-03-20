@@ -46,10 +46,6 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         #ifdef PIXELATED_SHADOWS
             vec3 playerPosPixelated = TexelSnap(playerPos, pixelationOffset);
         #endif 
-        #ifdef PIXELATED_BLOCKLIGHT
-            lightmap = clamp(TexelSnap(lightmap, pixelationOffset), 0.0, 1.0);
-            lViewPos = TexelSnap(lViewPos, pixelationOffset);
-        #endif
     #endif
 
     float lightmapY2 = pow2(lightmap.y);
@@ -62,8 +58,8 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 
     vec3 vxPos = playerPos + fractCamPos;
     vec3 worldNormalM = mat3(gbufferModelViewInverse) * normalM;
-    #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
-        vxPos = floor(vxPos * PIXEL_SHADOW + 0.001) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
+    #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
+        vxPos = TexelSnap(vxPos, pixelationOffset);
     #endif
     float voxelFactor = pow(min(1, 2 * infnorm(vxPos/voxelVolumeSize)), 10);
 
@@ -465,7 +461,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
 
             vec4 normalDepthData = texelFetch(colortex8, ivec2(blocklightReadCoord), 0);
             normalDepthData.w *= 60;
-            if (length(normalDepthData - compareNormalDepthData) < 0.2) {
+            if (length(normalDepthData - compareNormalDepthData) < 0.3) {
                 voxelBlockLighting = 4.0 * texelFetch(colortex12, ivec2(blocklightReadCoord), 0).rgb;
                 //color.rgb = vec3(1);
                 //voxelBlockLighting = 4 * vec3(normalize(blocklightReadCoord - gl_FragCoord.xy) * 0.5 + 0.5, 0);
@@ -609,12 +605,12 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
             float metalness = 0.0;
         #endif
         blocklightHighlight *= mix(vec3(1.0), pow2(color.rgb / infnorm(color.rgb + 0.0001)), metalness);
-        lightHighlight += blocklightHighlight;
+        if (!any(isnan(blocklightHighlight))) lightHighlight += blocklightHighlight;
     #endif
     // Mix Colors
     vec3 finalDiffuse = pow2(directionShade * vanillaAO) * (blockLighting + pow2(sceneLighting) + minLighting) + pow2(emission);
     finalDiffuse = sqrt(max(finalDiffuse, vec3(0.0))); // sqrt() for a bit more realistic light mix, max() to prevent NaNs
-
+    if (any(isnan(finalDiffuse))) finalDiffuse = vec3(0.0);
     // Apply Lighting
     color.rgb *= finalDiffuse;
     color.rgb += lightHighlight;

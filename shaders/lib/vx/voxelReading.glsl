@@ -45,7 +45,7 @@ vec4 getColor(vec3 pos) {
 }
 
 int getLightLevel(ivec3 coords) {
-    return imageLoad(occupancyVolume, coords).r >> 6 & 16; //FIXME not implemented
+    return imageLoad(occupancyVolume, coords).r >> 6 & 15; //FIXME not implemented
 }
 
 vec3 rayTrace(vec3 start, vec3 dir, float dither) {

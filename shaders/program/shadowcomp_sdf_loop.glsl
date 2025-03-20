@@ -43,7 +43,7 @@
     barrier();
     memoryBarrierShared();
 
-    theseDists[j] = (thisOccupancy >> j & 1) == 1 ? -1.0/sqrt(3.0) / (1<<j) : ((thisOccupancy >> j+8 & 1) == 1 ? 0.5 : 1000);
+    theseDists[j] = (thisOccupancy >> j & 1) == 1 ? -1.0/sqrt(3.0) / (1<<j) : 1000;
     if (isActive == 0) {
         #if j > 0
             ivec3 prevTexCoord0 = texCoord + (1<<j) * floorCamPosOffset;

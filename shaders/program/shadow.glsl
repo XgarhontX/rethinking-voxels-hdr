@@ -446,6 +446,18 @@ void main() {
             }
         }
 
+        // creeper
+        if (
+            #ifdef EXPLODING_CREEPER
+                localMat == 50024 ||
+            #endif
+            localMat == 50116) {
+            emissive = true;
+            if (entityColor.a < 0.1) {
+                emissive = false;
+            }
+        }
+
         if (emissive) {
             if (detectCol) {
                 float brightness = infnorm(col.xyz);

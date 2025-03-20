@@ -40,6 +40,24 @@ ivec3 floorCamPosOffset =
     #include "/lib/lighting/ggx.glsl"
 #endif
 
+#ifdef DO_PIXELATION_EFFECTS
+    #if PIXEL_SCALE == -2
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 4.0
+    #elif PIXEL_SCALE == -1
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 2.0
+    #elif PIXEL_SCALE == 2
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.5
+    #elif PIXEL_SCALE == 3
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.25
+    #elif PIXEL_SCALE == 4
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.125
+    #elif PIXEL_SCALE == 5
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 0.0625
+    #else // 1 or out of range
+        #define PIXEL_TEXEL_SCALE TEXTURE_RES / 1.0
+    #endif
+#endif
+
 #if MAX_TRACE_COUNT < 128 && !defined LONGER_LIGHT_LISTS
     #define MAX_LIGHT_COUNT 128
 #else
@@ -226,8 +244,8 @@ void main() {
             1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fractCamPos;
-        #if PIXEL_SHADOW > 0 && !defined GBUFFERS_HAND
-            vxPos = floor(vxPos * PIXEL_SHADOW + 0.5 * normalDepthData.xyz) / PIXEL_SHADOW + 0.5 / PIXEL_SHADOW;
+        #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
+            vxPos = floor(vxPos * PIXEL_TEXEL_SCALE + 0.5 * normalDepthData.xyz) / PIXEL_TEXEL_SCALE + 0.5 / PIXEL_TEXEL_SCALE;
         #endif
 
         normalDepthData.xyz = normalize(
@@ -352,18 +370,35 @@ void main() {
                 lightBrightness *= lightBrightness;
                 vec4 rayHit1 = coneTrace(biasedVxPos, (1.0 - 0.1 / (dirLen + 0.1)) * dir, lightSize * LIGHTSOURCE_SIZE_MULT / dirLen, dither);
                 if (rayHit1.w > 0.01) {
+                    #ifdef TRANSLUCENT_LIGHT_TINT
+                        vec3 translucentNormal = vec3(0);
+                        vec3 randomOffset = lightSize * LIGHTSOURCE_SIZE_MULT * randomSphereSample();
+                        vec3 translucentPos = voxelTrace(
+                            biasedVxPos,
+                            dir + randomOffset,
+                            translucentNormal,
+                            1<<8
+                        ).xyz;
+                        vec3 translucentCol = vec3(1.0);
+                        if (length(translucentPos - biasedVxPos) < dirLen - lightSize * LIGHTSOURCE_SIZE_MULT - 0.01) {
+                            translucentCol = getColor(translucentPos - 0.1 * translucentNormal).rgb;
+                        }
+                    #endif
                     vec3 thisBaseCol =
                         lightCols[thisLightIndex] *
-                        rayHit1.rgb *
+                    #ifdef TRANSLUCENT_LIGHT_TINT
+                        translucentCol *
+                    #endif
                         rayHit1.w *
                         distanceFalloff(dirLen / (thisTraceLen * LIGHT_TRACE_LENGTH)) *
                         lightBrightness;
                     if (!any(isnan(thisBaseCol)) && !isnan(ndotl0)) {
                         writeColor += thisBaseCol * ndotl0;
                         #ifdef BLOCKLIGHT_HIGHLIGHT
+
                             float specularBrightness = GGX(
                                 normalDepthData.xyz,
-                                normalize(playerPos.xyz - gbufferModelView[3].xyz),
+                                normalize(playerPos.xyz - gbufferModelViewInverse[3].xyz),
                                 normalize(lightPos - vxPos),
                                 ndotl0,
                                 smoothness
