@@ -526,9 +526,6 @@ void main() {
                         vec3 hitBlocklight = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * hitNormal + vec3(0.5, 1.5, 0.5) * voxelVolumeSize)).rgb;
                         vec4 hitGIColor = imageLoad(irradianceCacheI, ivec3(hitPos + 0.5 * hitNormal + 0.5 * voxelVolumeSize - vec3(0.5)));
                         vec3 hitGIlight = hitGIColor.rgb / max(hitGIColor.a, 0.0001);
-                        if (any(greaterThan(hitGIlight, vec3(1.0)))) {
-                            hitGIlight = vec3(0.0);
-                        }
                         if (!(length(hitNormal) > 0.5)) hitNormal = vec3(0);
                         #if defined REALTIME_SHADOWS && defined OVERWORLD
                             vec3 sunShadowPos = GetShadowPos(hitPos - fractCamPos);
