@@ -187,6 +187,11 @@ void main() {
     vec3 colorP = color.rgb;
     color.rgb *= glColor.rgb;
 
+    vec4 albedo = color;
+    if (viewWidth + viewHeight - gl_FragCoord.x - gl_FragCoord.y < 1.5) {
+        albedo.r = texelFetch(colortex4, ivec2(gl_FragCoord.xy), 0).r;
+    }
+
     vec3 screenPos = vec3(gl_FragCoord.xy / vec2(viewWidth, viewHeight), gl_FragCoord.z);
     #ifdef TAA
         vec3 viewPos = ScreenToView(vec3(TAAJitter(screenPos.xy, -0.5), screenPos.z));
@@ -352,10 +357,11 @@ void main() {
         ColorCodeProgram(color, mat);
     #endif
 
-    /* DRAWBUFFERS:065 */
+    /* DRAWBUFFERS:0654 */
     gl_FragData[0] = color;
     gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
     gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+    gl_FragData[3] = albedo;
 }
 
 #endif
@@ -433,6 +439,13 @@ void main() {
     absMidCoordPos  = abs(texMinMidCoord);
 
     mat = int(mc_Entity.x + 0.5);
+
+    if (mat == 10132 && infnorm(gl_Normal) < 0.99) {
+        if (length(gl_Normal.xz) > 0.99)
+            mat = 10005;
+        else
+            mat = 10017;
+    }
 
     #if ANISOTROPIC_FILTER > 0
         if (mc_Entity.y > 0.5 && dot(normal, upVec) < 0.999) absMidCoordPos = vec2(0.0); // Fix257062

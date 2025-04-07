@@ -291,12 +291,7 @@ void main() {
 
     cnormal = normalize(cnormal);
 
-    bool emissive = isEmissive(localMat) ||
-    #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
-        (lmCoordV[0].x > 0.3 && localMat == 0);
-    #else
-        (lmCoordV[0].x > 0.99 && localMat == 0);
-    #endif
+    bool emissive = isEmissive(localMat) || lmCoordV[0].x > 0.3;
 
     vec3[3] vxPos;
 
@@ -597,9 +592,10 @@ in vec4 at_midBlock;
 #endif
 
 //Common Variables//
+vec2 lmCoord = eyeBrightness / 240.0;
+
 #if COLORED_LIGHTING_INTERNAL > 0
     writeonly uniform uimage3D voxel_img;
-    vec2 lmCoord;
 #endif
 #ifdef PUDDLE_VOXELIZATION
     writeonly uniform uimage2D puddle_img;
@@ -637,8 +633,10 @@ void main() {
     positionV /= positionV.w;
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
+    if (matV == 65535) matV = 0;
+    lmCoordV.x = float(lmCoordV.x >= 0.99) * 0.8;
     #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
-        lmCoordV.x = 0.0;
+        lmCoordV.x *= 0.8;
     #endif
     if (
         renderStage == MC_RENDER_STAGE_TERRAIN_SOLID ||
@@ -649,7 +647,7 @@ void main() {
         correspondingBlockV = ivec3(floor(positionV.xyz + fractCamPos + at_midBlock.xyz/64) + 1000.5) - 1000 + voxelVolumeSize/2;
         matV = int(mc_Entity.x + 0.5);
         #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
-            lmCoordV.x = at_midBlock.w/15.0;
+            lmCoordV.x = max(lmCoordV.x, at_midBlock.w/20.0);
         #endif
         //positionV = vec4(correspondingBlockV - voxelVolumeSize/2 - fractCamPos + 0.5 - at_midBlock.xyz/64, 1.0);
     }

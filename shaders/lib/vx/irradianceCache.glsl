@@ -19,7 +19,7 @@ vec3 readSurfaceVoxelBlocklight(vec3 vxPos, vec3 normal) {
     vec4 color = textureLod(irradianceCache, vxPos, 0);
     float lColor = length(color.rgb);
     if (lColor > 0.01) color.rgb *= log(lColor + 1) / lColor;
-    return color.rgb;// / max(color.a, 0.0001);
+    return color.rgb;
 }
 
 vec3 readVolumetricBlocklight(vec3 vxPos) {

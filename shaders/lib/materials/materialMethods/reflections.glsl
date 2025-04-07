@@ -194,7 +194,7 @@ vec4 GetReflection(vec3 normalM, vec3 viewPos, vec3 nViewPos, vec3 playerPos, fl
                     vec3 sunShadow = vec3(skyLight * skyLight);
                 #endif
                 float RNdotS = dot(hitNormal, mat3(gbufferModelViewInverse) * sunVec);
-                vec3 blockLight = readSurfaceVoxelBlocklight(hitPos, hitNormal);
+                vec3 blockLight = 4.0 * readSurfaceVoxelBlocklight(hitPos, hitNormal);
                 #ifdef GI
                     vec3 ambientColorM = readIrradianceCache(hitPos, hitNormal);
                 #else

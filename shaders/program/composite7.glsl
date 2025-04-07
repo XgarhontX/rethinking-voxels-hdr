@@ -35,7 +35,7 @@ void main() {
     #endif
 /*
     if (texCoord.x < 0.5) {
-        color = texture(shadowcolor2, (texCoord * vec2(2, 1) - 0.5) * 1.0 + 0.5).rgb;
+        color = texture(colortex10, texCoord).rgb;
     } else if (false) {
         vec4 dir = gbufferModelViewInverse * (gbufferProjectionInverse * vec4(texCoord * 2 - 1, 0.999, 1));
         dir = normalize(dir * dir.w);

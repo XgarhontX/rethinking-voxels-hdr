@@ -102,6 +102,11 @@ void main() {
     #endif
     color *= glColor;
 
+    vec4 albedo = color;
+    if (viewWidth + viewHeight - gl_FragCoord.x - gl_FragCoord.y < 1.5) {
+        albedo.r = texelFetch(colortex4, ivec2(gl_FragCoord.xy), 0).r;
+    }
+
     float smoothnessD = 0.0, skyLightFactor = 0.0, materialMask = OSIEBCA * 254.0; // No SSAO, No TAA
     vec3 normalM = normal;
 
@@ -182,10 +187,11 @@ void main() {
         ColorCodeProgram(color, -1);
     #endif
 
-    /* DRAWBUFFERS:065 */
+    /* DRAWBUFFERS:0654 */
     gl_FragData[0] = color;
     gl_FragData[1] = vec4(smoothnessD, materialMask, skyLightFactor, 1.0);
     gl_FragData[2] = vec4(mat3(gbufferModelViewInverse) * normalM, 1.0);
+    gl_FragData[3] = albedo;
 }
 
 #endif

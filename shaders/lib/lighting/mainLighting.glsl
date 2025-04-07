@@ -477,9 +477,9 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
     #endif
     #ifdef GI
         #ifndef GBUFFERS_WATER
-            vec3 giLighting = 1.8 * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH;
+            vec3 giLighting = 1.8 * readIrradianceCache(vxPos, mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH * 0.5;
         #else
-            vec3 giLighting = 1.8 * readIrradianceCache(vxPos, -0.5 * mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH;
+            vec3 giLighting = 1.8 * readIrradianceCache(vxPos, -0.5 * mat3(gbufferModelViewInverse) * normalM) * GI_STRENGTH * 0.5;
         #endif
         float lGiLighting = length(giLighting);
         if (lGiLighting > 0.01) giLighting *= log(lGiLighting + 1.0) / lGiLighting;
@@ -510,7 +510,7 @@ void DoLighting(inout vec4 color, inout vec3 shadowMult, vec3 playerPos, vec3 vi
         0;
     #endif
 
-    if (isEmissive(localMat)) {
+    if (isEmissive(localMat) || (lightmap.x >= 0.95 && dFdx(lightmap.x) == 0.0 && dFdy(lightmap.x) == 0.0)) {
         voxelBlockLighting = max(blockLighting, voxelBlockLighting * max(0.0, 1.0 - voxelFactor));
     }
 

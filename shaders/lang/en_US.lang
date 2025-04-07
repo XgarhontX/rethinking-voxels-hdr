@@ -1222,8 +1222,8 @@ option.VBL_END_MULT=Vol. Blocklight End Multiplier
 
 option.GI_STRENGTH=Global Illumination
 value.GI_STRENGTH.0=Off
-value.GI_STRENGTH.1=Correct
-value.GI_STRENGTH.2=Intense
+value.GI_STRENGTH.1=Subtle
+value.GI_STRENGTH.2=Correct
 
 option.GI_AMBIENT_MIN=GI Ambient Brightness
 option.GI_AMBIENT_MIN.comment=When Global Illumination is enabled, incrases the brightness of shadows to be closer to vanilla Minecraft lighting.

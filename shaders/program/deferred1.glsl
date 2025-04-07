@@ -261,7 +261,10 @@ void main() {
 
                         intenseFresnel = materialMaskInt / 240.0;
                     #endif
-                    reflectColor = mix(reflectColor, color.rgb / max(color.r + 0.00001, max(color.g, color.b)), metalness);
+                    if (metalness > 0.0) {
+                        vec3 albedo = texelFetch(colortex4, texelCoord, 0).rgb;
+                        reflectColor = mix(reflectColor, albedo, metalness);
+                    }
                 #endif
             } else {
                 if (materialMaskInt == 254) // No SSAO, No TAA
@@ -273,49 +276,39 @@ void main() {
 
         #ifdef PBR_REFLECTIONS
             float skyLightFactor = texture6.b;
-
-            float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0);
-
-            float fresnelFactor = (1.0 - smoothnessD) * 0.7;
-            float fresnelM = max(fresnel - fresnelFactor, 0.0) / (1.0 - fresnelFactor);
-            #ifdef IPBR
-                fresnelM = mix(pow2(fresnelM), fresnelM * 0.75 + 0.25, intenseFresnel);
+            #ifdef CUSTOM_PBR
+                float NdotV = clamp(1.0 + dot(normalM, nViewPos), 0.0, 0.9 + 0.1 * smoothnessD);
+                float fresnelM = mix(pow2(pow2(NdotV)) * NdotV, 0.5 + 0.5 * sqrt1(smoothnessD), intenseFresnel * 0.8);
+                float lReflectColor = max(0.000001, infnorm(reflectColor));
+                reflectColor = mix(reflectColor * reflectColor / lReflectColor, reflectColor / lReflectColor, pow2(NdotV));
             #else
-                fresnelM = mix(pow2(fresnelM), fresnelM * 0.5 + 0.5, intenseFresnel);
+                float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0);
+
+                float fresnelFactor = (1.0 - smoothnessD) * 0.7;
+                float fresnelM = max(fresnel - fresnelFactor, 0.0) / (1.0 - fresnelFactor);
+                #ifdef IPBR
+                    fresnelM = mix(pow2(fresnelM), fresnelM * 0.75 + 0.25, intenseFresnel);
+                #else
+                    fresnelM = mix(pow2(fresnelM), fresnelM * 0.5 + 0.5, intenseFresnel);
+                #endif
+                fresnelM = fresnelM * sqrt1(smoothnessD) - dither * 0.001;
             #endif
-            fresnelM = fresnelM * sqrt1(smoothnessD) - dither * 0.001;
 
             if (fresnelM > 0.0) {
-                vec2 roughCoord = gl_FragCoord.xy / 128.0;
-                #ifdef TAA
-                    float noiseMult = 0.3;
-                #else
-                    float noiseMult = 0.1;
-                #endif
                 #ifdef TEMPORAL_FILTER
                     float blendFactor = 1.0;
                     float writeFactor = 1.0;
                 #endif
                 #if defined CUSTOM_PBR || defined IPBR && defined IS_IRIS
                     if (entityOrHand) {
-                        noiseMult *= 0.1;
                         #ifdef TEMPORAL_FILTER
                             blendFactor = 0.0;
                             writeFactor = 0.0;
                         #endif
                     }
                 #endif
-                noiseMult *= pow2(1.0 - smoothnessD);
 
-                vec3 roughNoise = vec3(texture2D(noisetex, roughCoord).r, texture2D(noisetex, roughCoord + 0.1).r, texture2D(noisetex, roughCoord + 0.2).r);
-                roughNoise = fract(roughNoise + vec3(dither, dither * goldenRatio, dither * pow2(goldenRatio)));
-                roughNoise = noiseMult * (roughNoise - vec3(0.5));
-
-                normalM += roughNoise;
-
-                vec4 reflection = GetReflection(normalM, viewPos.xyz, nViewPos, playerPos, lViewPos, z0,
-                                                depthtex0, dither, skyLightFactor, fresnel,
-                                                smoothnessD, vec3(0.0), vec3(0.0), vec3(0.0), 0.0);
+                vec4 reflection = texelFetch(colortex8, texelCoord, 0);
 
                 vec3 colorAdd = reflection.rgb * reflectColor;
                 //float colorMultInv = (0.75 - intenseFresnel * 0.5) * max(reflection.a, skyLightFactor);
@@ -378,7 +371,12 @@ void main() {
                     color += colorAdd * fresnelM;
                 #endif
 
-                color = max(colorP * max(intenseFresnel, 1.0 - pow2(smoothnessD)) * 0.9, color);
+                #ifdef CUSTOM_PBR
+                    float darkeningReduction = 0.6 + 0.4 * min(1.0, eyeBrightness.y/160.0);
+                #else
+                    const float darkeningReduction = 1.0;
+                #endif
+                color = max(colorP * darkeningReduction * max(intenseFresnel, 1.0 - pow2(smoothnessD)) * 0.9, color);
 
                 //if (gl_FragCoord.x > 960) color = vec3(5.25,0,5.25);
             }

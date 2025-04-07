@@ -193,7 +193,7 @@ void registerLight(ivec3 lightCoord, vec3 referencePos, float weight) {
 }
 
 void main() {
-    int index = int(gl_LocalInvocationID.x + gl_WorkGroupSize.x * (gl_LocalInvocationID.y + gl_WorkGroupSize.y * gl_LocalInvocationID.z));
+    int index = int(gl_LocalInvocationIndex);
     float dither = nextFloat();
     if (index < 4) {
         vec4 pos = vec4(squareCorners[index], 0.9999, 1);
@@ -230,7 +230,7 @@ void main() {
     }
     bool hasNeighbor = false;
     int updateInterval = min(int(0.01 * dot(meanPos, meanPos) + 1.0), 10);
-    bool activeFrame = int(gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z) % updateInterval == frameCounter * 3 % updateInterval;
+    bool activeFrame = int(gl_WorkGroupID.x + gl_WorkGroupID.y + gl_WorkGroupID.z) % updateInterval == frameCounter % updateInterval;
 
     if (insideFrustrum && activeFrame) {
         anyInFrustrum = true;
@@ -512,9 +512,9 @@ void main() {
                         translucentCol.xyz = mix(vec3(1), translucentCol.xyz, translucentCol.w);
                     }
                     #ifdef GL_CAVE_FACTOR
-                        vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
+                        vec3 ambientHitCol = AMBIENT_MULT * 0.25 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) * (1-GetCaveFactor(cameraPosition.y + vxPos.y)) / GI_STRENGTH;
                     #else
-                        vec3 ambientHitCol = AMBIENT_MULT * 0.04 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
+                        vec3 ambientHitCol = AMBIENT_MULT * 0.25 * skyLight * ambientColor * clamp(dir.y + 1.6, 0.6, 1) / GI_STRENGTH;
                     #endif
                     vec3 hitCol = vec3(0);
                     if (length(hitPos - vxPos) < LIGHT_TRACE_LENGTH - 0.5 && infnorm(hitPos / voxelVolumeSize) < 0.5) {
@@ -539,8 +539,8 @@ void main() {
                         hitCol = ((hitBlocklight + 3 * hitSunlight) * 4 + hitGIlight) * hitAlbedo;
                         ambientHitCol *= pow2(length(hitPos - vxPos) / LIGHT_TRACE_LENGTH);
                     }
-                    vec3 hitContrib = hitCol * translucentCol.xyz * ndotl;
-                    if (all(greaterThanEqual(ambientHitCol, vec3(0)))) ambientContribution += vec4(ambientHitCol * translucentCol.xyz, 1.0) * ndotl;
+                    vec3 hitContrib = hitCol * translucentCol.xyz;
+                    if (all(greaterThanEqual(ambientHitCol, vec3(0)))) ambientContribution += vec4(ambientHitCol * translucentCol.xyz, 1.0);
                     if (all(greaterThanEqual(hitContrib, vec3(0)))) GILight += vec4(hitContrib, 1.0);
                 }
                 GILight += min(ambientContribution, vec4(ambientColor * 2.0, 1.0) * ambientContribution.a);
