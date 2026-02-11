@@ -247,37 +247,37 @@ void main() {
         smoothnessD = texture6.r;
         vec3 reflectColor = vec3(1.0);
 
-        #ifdef IPBR
-            #include "/lib/materials/materialHandling/deferredMaterials.glsl"
-        #else
-            if (materialMaskInt <= 240) {
-                #ifdef CUSTOM_PBR
-                    #if RP_MODE == 2 // seuspbr
-                        float metalness = materialMaskInt / 240.0;
+        if (materialMaskInt <= 240) {
+            #ifdef IPBR
+                #include "/lib/materials/materialHandling/deferredMaterials.glsl"
+            #elif defined CUSTOM_PBR
+                #if RP_MODE == 2 // seuspbr
+                    float metalness = materialMaskInt / 240.0;
 
-                        intenseFresnel = metalness;
-                    #elif RP_MODE == 3 // labPBR
-                        float metalness = float(materialMaskInt >= 230);
+                    intenseFresnel = metalness;
+                #elif RP_MODE == 3 // labPBR
+                    float metalness = float(materialMaskInt >= 230);
 
-                        intenseFresnel = materialMaskInt / 240.0;
-                    #endif
-                    if (metalness > 0.0) {
-                        vec3 albedo = texelFetch(colortex4, texelCoord, 0).rgb;
-                        reflectColor = mix(reflectColor, albedo, metalness);
-                    }
+                    intenseFresnel = materialMaskInt / 240.0;
                 #endif
-            } else {
-                if (materialMaskInt == 254) // No SSAO, No TAA
-                    ssao = 1.0;
+                if (metalness > 0.0) {
+                    vec3 albedo = texelFetch(colortex4, texelCoord, 0).rgb;
+                    reflectColor = mix(reflectColor, albedo, metalness);
+                }
+            #endif
+        } else {
+            if (materialMaskInt == 254) { // No SSAO, No TAA
+                ssao = 1.0;
+                entityOrHand = true;
             }
-        #endif
+        }
 
         color.rgb *= ssao;
 
         #ifdef PBR_REFLECTIONS
             float skyLightFactor = texture6.b;
             #ifdef CUSTOM_PBR
-                float NdotV = clamp(1.0 + dot(normalM, nViewPos), 0.0, 0.9 + 0.1 * smoothnessD);
+                float NdotV = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0) * (0.7 + 0.3 * smoothnessD);
                 float fresnelM = mix(pow2(pow2(NdotV)) * NdotV, 0.5 + 0.5 * sqrt1(smoothnessD), intenseFresnel * 0.8);
                 float lReflectColor = max(0.000001, infnorm(reflectColor));
                 reflectColor = mix(reflectColor * reflectColor / lReflectColor, reflectColor / lReflectColor, pow2(NdotV));
@@ -376,7 +376,7 @@ void main() {
                 #else
                     const float darkeningReduction = 1.0;
                 #endif
-                color = max(colorP * darkeningReduction * max(intenseFresnel, 1.0 - pow2(smoothnessD)) * 0.9, color);
+                color = max(colorP * darkeningReduction, color); // Prevents reflections from making a surface darker
 
                 //if (gl_FragCoord.x > 960) color = vec3(5.25,0,5.25);
             }

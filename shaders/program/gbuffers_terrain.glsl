@@ -18,6 +18,7 @@ flat in vec2 midCoord;
 
 flat in vec3 upVec, sunVec, northVec, eastVec;
 in vec3 normal;
+in vec3 vertexPos;
 
 in vec4 glColorRaw;
 
@@ -72,8 +73,10 @@ void DoFoliageColorTweaks(inout vec3 color, inout vec3 shadowMult, inout float s
     float factor = max(80.0 - lViewPos, 0.0);
     shadowMult *= 1.0 + 0.004 * noonFactor * factor;
 
-    if (signMidCoordPos.x < 0.0) color.rgb *= 1.08;
-    else color.rgb *= 0.93;
+    #if defined IPBR && !defined IPBR_COMPATIBILITY_MODE
+        if (signMidCoordPos.x < 0.0) color.rgb *= 1.08;
+        else color.rgb *= 0.93;
+    #endif
 
     #ifdef FOLIAGE_ALT_SUBSURFACE
         float edgeSize = 0.12;
@@ -181,7 +184,7 @@ void main() {
     float smoothnessD = 0.0, materialMask = 0.0, skyLightFactor = 0.0;
 
     #if !defined POM || !defined POM_ALLOW_CUTOUT
-        if (color.a <= 0.00001) discard;
+        if (color.a <= 0.00001) discard; // 6WIR4HT23
     #endif
 
     vec3 colorP = color.rgb;
@@ -200,7 +203,7 @@ void main() {
     #endif
     float lViewPos = length(viewPos);
     vec3 nViewPos = normalize(viewPos);
-    vec3 playerPos = ViewToPlayer(viewPos);
+    vec3 playerPos = vertexPos;
 
     float dither = Bayer64(gl_FragCoord.xy);
     #ifdef TAA
@@ -221,9 +224,6 @@ void main() {
         #ifdef SLANTED_BLOCK_EDGES
             GenerateEdgeSlopes(normalM, playerPos);
         #endif
-
-        //int blockEntityId = mat;
-        //#include "/lib/materials/materialHandling/blockEntityMaterials.glsl"
 
         #ifdef GENERATED_NORMALS
             if (!noGeneratedNormals) GenerateNormals(normalM, colorP);
@@ -337,7 +337,7 @@ void main() {
         #include "/lib/misc/showLightLevels.glsl"
     #endif
 
-    DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM,
+    DoLighting(color, shadowMult, playerPos, viewPos, lViewPos, geoNormal, normalM, dither,
                worldGeoNormal, lmCoordM, noSmoothLighting, noDirectionalShading, noVanillaAO,
                centerShadowBias, subsurfaceMode, smoothnessG, materialMask, highlightMult, emission);
 
@@ -379,6 +379,7 @@ flat out vec2 midCoord;
 
 flat out vec3 upVec, sunVec, northVec, eastVec;
 out vec3 normal;
+out vec3 vertexPos;
 
 out vec4 glColorRaw;
 
@@ -403,6 +404,7 @@ attribute vec4 mc_midTexCoord;
 #if RAIN_PUDDLES >= 1 || defined GENERATED_NORMALS || defined CUSTOM_PBR
     attribute vec4 at_tangent;
 #endif
+attribute vec4 at_midBlock;
 
 //Common Variables//
 vec4 glColor = vec4(1.0);
@@ -447,26 +449,23 @@ void main() {
             mat = 10017;
     }
 
+    if (mat == 0 && at_midBlock.w > 0.3) {
+        mat = 10028;
+    }
+
     #if ANISOTROPIC_FILTER > 0
         if (mc_Entity.y > 0.5 && dot(normal, upVec) < 0.999) absMidCoordPos = vec2(0.0); // Fix257062
     #endif
 
+    vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
+    vertexPos = position.xyz;
+
     #ifdef WAVING_ANYTHING_TERRAIN
-        vec4 position = gbufferModelViewInverse * gl_ModelViewMatrix * gl_Vertex;
-
         DoWave(position.xyz, mat);
-
-        gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
-    #else
-        gl_Position = ftransform();
-
-        #ifndef WAVING_LAVA
-            if (mat == 10068) { // Lava
-                // G8FL735 Fixes Optifine-Iris parity. Optifine has 0.9 gl_Color.rgb on a lot of versions
-                glColorRaw.rgb = min(glColorRaw.rgb, vec3(0.9));
-            }
-        #endif
     #endif
+
+    gl_Position = gl_ProjectionMatrix * gbufferModelView * position;
+
 
     #ifdef FLICKERING_FIX
         if (mat == 10257) gl_Position.z -= 0.00001; // Iron Bars

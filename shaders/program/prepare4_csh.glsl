@@ -244,9 +244,6 @@ void main() {
             1) * 2 - 1));
         playerPos /= playerPos.w;
         vxPos = playerPos.xyz + fractCamPos;
-        #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
-            vxPos = floor(vxPos * PIXEL_TEXEL_SCALE + 0.5 * normalDepthData.xyz) / PIXEL_TEXEL_SCALE + 0.5 / PIXEL_TEXEL_SCALE;
-        #endif
 
         normalDepthData.xyz = normalize(
             normalDepthData.xyz - max(0.0, dot(normalDepthData.xyz, playerPos.xyz)) / pow2(length(playerPos.xyz)) * playerPos.xyz
@@ -257,6 +254,10 @@ void main() {
         float dfValMargin = 0.01;
         if (normalDepthData.a > 0.44) { // hand
             dfValMargin = 0.5;
+        } else {
+            #if defined DO_PIXELATION_EFFECTS && defined PIXELATED_BLOCKLIGHT
+                vxPos = floor(vxPos * PIXEL_TEXEL_SCALE + 0.5 * normalDepthData.xyz) / PIXEL_TEXEL_SCALE + 0.5 / PIXEL_TEXEL_SCALE;
+            #endif
         }
         for (int k = 0; k < 4; k++) {
             biasedVxPos = vxPos + bias * normalDepthData.xyz;

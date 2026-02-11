@@ -142,7 +142,7 @@ void main() {
 
                         vec2 waterWind = vec2(syncedTime * 0.01, 0.0);
                         float waterNoise = texture2D(noisetex, worldPosM.xz * 0.012 - waterWind).g;
-                            waterNoise += texture2D(noisetex, worldPosM.xz * 0.05 + waterWind).g;
+                              waterNoise += texture2D(noisetex, worldPosM.xz * 0.05 + waterWind).g;
 
                         float factor = max(2.5 - 0.025 * length(position.xz), 0.8333) * 1.3;
                         waterNoise = pow(waterNoise * 0.5, factor) * factor * 1.3;
@@ -325,10 +325,11 @@ void main() {
         vec2 minTexCoord = min(min(texCoordV[0], texCoordV[1]), texCoordV[2]);
         vec2 maxTexCoord = max(max(texCoordV[0], texCoordV[1]), texCoordV[2]);
         int lodLevel = int(log2(max(4.1, 1.01 * min((maxTexCoord.x - minTexCoord.x) * atlasSize.x, (maxTexCoord.y - minTexCoord.y) * atlasSize.y)))) - 2;
-        vec4 col = vec4(getLightCol(localMat), 1);
+        vec4 col = vec4(0);
         int lightLevel = 0;
         if (emissive) {
             lightLevel = getLightLevel(localMat);
+            col = vec4(getLightCol(localMat), 1);
         }
         #if RP_MODE >= 2
             #if RP_MODE == 2
@@ -634,7 +635,7 @@ void main() {
     correspondingBlockV = ivec3(-1000);
     matV = blockEntityId;
     if (matV == 65535) matV = 0;
-    lmCoordV.x = float(lmCoordV.x >= 0.99) * 0.8;
+    lmCoordV.x = float(lmCoordV.x >= 0.99 && matV == 0 && renderStage == MC_RENDER_STAGE_ENTITIES) * 0.8;
     #ifdef IRIS_FEATURE_BLOCK_EMISSION_ATTRIBUTE
         lmCoordV.x *= 0.8;
     #endif

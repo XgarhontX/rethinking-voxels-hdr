@@ -15,7 +15,7 @@ const int colortex12Format= RGBA16F;        //block lighting
 const int colortex13Format= RGBA16F;        //raw specular lighting
 const int colortex14Format= RGBA16F;        //specular lighting
 
-const int shadowcolor2Format = RGBA16F;     //interactive water (low detail)
+const int shadowcolor2Format = RGBA16f;     //interactive water (low detail)
 */
 
 const bool colortex0Clear = true;

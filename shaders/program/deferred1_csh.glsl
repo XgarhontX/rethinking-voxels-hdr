@@ -3,7 +3,7 @@
 
 #ifdef CSH
 
-const vec2 workGroupsRender = vec2(1.0, 1.0);
+const vec2 workGroupsRender = vec2(0.5, 0.5);
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
@@ -40,7 +40,8 @@ layout(rgba16f) uniform image2D colorimg10;
 
 void main() {
     #ifdef PBR_REFLECTIONS
-        ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
+        ivec2 coord = 2 * ivec2(gl_GlobalInvocationID.xy);
+
         float z0 = texelFetch(depthtex0, coord, 0).r;
         vlFactor = texelFetch(colortex4, ivec2(viewWidth-1, viewHeight-1), 0).r;
         vec4 screenPos = vec4((coord.xy + 0.5) / view, z0, 1.0);
@@ -87,58 +88,44 @@ void main() {
         #endif
 
         float skyLightFactor = texture6.b;
-        #ifdef CUSTOM_PBR
-            float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 0.9 + 0.1 * smoothnessD);
-            float fresnelM = mix(pow2(pow2(fresnel)) * fresnel, 0.5 + 0.5 * sqrt1(smoothnessD), intenseFresnel * 0.8);
+        float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0);
+
+        vec2 roughCoord = gl_FragCoord.xy / 128.0;
+        #ifdef TAA
+            float noiseMult = 0.3;
         #else
-            float fresnel = clamp(1.0 + dot(normalM, nViewPos), 0.0, 1.0);
-
-            float fresnelFactor = (1.0 - smoothnessD) * 0.7;
-            float fresnelM = max(fresnel - fresnelFactor, 0.0) / (1.0 - fresnelFactor);
-            #ifdef IPBR
-                fresnelM = mix(pow2(fresnelM), fresnelM * 0.75 + 0.25, intenseFresnel);
-            #else
-                fresnelM = mix(pow2(fresnelM), fresnelM * 0.5 + 0.5, intenseFresnel);
-            #endif
-            fresnelM = fresnelM * sqrt1(smoothnessD) - dither * 0.001;
+            float noiseMult = 0.1;
         #endif
+        #ifdef TEMPORAL_FILTER
+            float blendFactor = 1.0;
+            float writeFactor = 1.0;
+        #endif
+        #if defined CUSTOM_PBR || defined IPBR && defined IS_IRIS
+            if (entityOrHand) {
+                noiseMult *= 0.1;
+                #ifdef TEMPORAL_FILTER
+                    blendFactor = 0.0;
+                    writeFactor = 0.0;
+                #endif
+            }
+        #endif
+        noiseMult *= pow2(1.0 - smoothnessD);
 
-        if (fresnelM > dither && z0 < 1.0) {
-            vec2 roughCoord = gl_FragCoord.xy / 128.0;
-            #ifdef TAA
-                float noiseMult = 0.3;
-            #else
-                float noiseMult = 0.1;
-            #endif
-            #ifdef TEMPORAL_FILTER
-                float blendFactor = 1.0;
-                float writeFactor = 1.0;
-            #endif
-            #if defined CUSTOM_PBR || defined IPBR && defined IS_IRIS
-                if (entityOrHand) {
-                    noiseMult *= 0.1;
-                    #ifdef TEMPORAL_FILTER
-                        blendFactor = 0.0;
-                        writeFactor = 0.0;
-                    #endif
-                }
-            #endif
-            noiseMult *= pow2(1.0 - smoothnessD);
+        vec3 roughNoise = vec3(texture2D(noisetex, roughCoord).r, texture2D(noisetex, roughCoord + 0.1).r, texture2D(noisetex, roughCoord + 0.2).r);
+        roughNoise = fract(roughNoise + vec3(dither, dither * goldenRatio, dither * pow2(goldenRatio)));
+        roughNoise = noiseMult * (roughNoise - vec3(0.5));
 
-            vec3 roughNoise = vec3(texture2D(noisetex, roughCoord).r, texture2D(noisetex, roughCoord + 0.1).r, texture2D(noisetex, roughCoord + 0.2).r);
-            roughNoise = fract(roughNoise + vec3(dither, dither * goldenRatio, dither * pow2(goldenRatio)));
-            roughNoise = noiseMult * (roughNoise - vec3(0.5));
+        normalM += roughNoise;
 
-            normalM += roughNoise;
-
-            vec4 reflection = GetReflection(normalM, viewPos.xyz, nViewPos, playerPos, lViewPos, z0,
-                                            depthtex0, dither, skyLightFactor, fresnel,
-                                            smoothnessD, vec3(0.0), vec3(0.0), vec3(0.0), 0.0);
-            if (any(isnan(reflection))) reflection = vec4(0);
-            imageStore(colorimg10, coord, vec4(reflection.rgb, fresnelM));
-        } else {
-            imageStore(colorimg10, coord, vec4(0, 0, 0, fresnelM));
-        };
+        vec4 reflection = GetReflection(normalM, viewPos.xyz, nViewPos, playerPos, lViewPos, z0,
+                                        depthtex0, dither, skyLightFactor, fresnel,
+                                        smoothnessD, vec3(0.0), vec3(0.0), vec3(0.0), 0.0);
+        if (any(isnan(reflection))) reflection = vec4(0);
+        imageStore(
+            colorimg10,
+            coord / 2,
+            vec4(reflection.rgb, 1.0)
+        );
     #endif
 }
 #endif
@@ -153,56 +140,29 @@ uniform sampler2D colortex10;
 
 #include "/lib/util/random.glsl"
 
-shared uvec4 mip1[8][8];
-shared uvec4 mip2[4][4];
-
 void main() {
     #ifdef PBR_REFLECTIONS
-        if (gl_LocalInvocationID.xy * 2 / gl_WorkGroupSize.xy == uvec2(0)) {
-            mip1[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = uvec4(0);
-            if (gl_LocalInvocationID.xy * 4 / gl_WorkGroupSize.xy == uvec2(0)) {
-                mip2[gl_LocalInvocationID.x][gl_LocalInvocationID.y] = uvec4(0);
-            }
-        }
-        memoryBarrierShared();
-        barrier();
         ivec2 coord = ivec2(gl_GlobalInvocationID.xy);
-        ivec2 localCoord = ivec2(gl_LocalInvocationID.xy);
+
         float z0 = texelFetch(depthtex0, coord, 0).r;
-        vec4 thisReflection = texelFetch(colortex10, coord, 0);
-        float lobeSize = 1.5 * inversesqrt(thisReflection.a + 0.01);
         vec4 filteredReflection = vec4(0);
         if (z0 < 1.0) {
             vec3 normalM = texelFetch(colortex5, coord, 0).rgb;
-            vec2 texture6 = texelFetch(colortex6, coord, 0).rg;
+            vec4 texture6 = texelFetch(colortex6, coord, 0);
             for (int k = 0; k < 10; k++) {
-                vec2 offset = lobeSize * randomGaussian();
-                ivec2 newCoord = coord + (ivec2(offset + 1000.5) - 1000);
-                if (
-                    all(greaterThanEqual(newCoord, ivec2(0))) &&
-                    all(lessThan(newCoord, ivec2(viewWidth + 0.5, viewHeight + 0.5)))
-                ) {
-                    vec3 normalDiff = normalM - texelFetch(colortex5, newCoord, 0).rgb;
-                    vec2 texture6Diff = texture6 - texelFetch(colortex6, newCoord, 0).rg;
-                    float weight = exp(
-                        -5 * dot(normalDiff, normalDiff)
-                        -15 * dot(texture6Diff, texture6Diff)
-                    );
-                    vec3 otherReflection = texelFetch(colortex10, newCoord, 0).rgb;
-                    filteredReflection += vec4(weight * otherReflection, weight);
-                }
-            }
-            uvec4 discretizedReflection = uvec4(10000 * filteredReflection);
-            for (int k = 0; k < 4; k++) {
-                atomicAdd(mip1[localCoord.x>>1][localCoord.y>>1][k], discretizedReflection[k]);
-                atomicAdd(mip2[localCoord.x>>2][localCoord.y>>2][k], discretizedReflection[k]);
+                ivec2 newCoord = ivec2(coord * 0.5 + 0.5 + 0.8 * randomGaussian());
+                vec3 aroundReflection = texelFetch(colortex10, newCoord, 0).rgb;
+                vec3 aroundNormal = texelFetch(colortex5, newCoord << 1, 0).rgb;
+                vec4 aroundTexture6 = texelFetch(colortex6, newCoord << 1, 0);
+                float thisWeight = exp(
+                    -10 * dot(normalM - aroundNormal, normalM - aroundNormal)
+                    - 10 * dot(texture6 - aroundTexture6, texture6 - aroundTexture6)
+                );
+                filteredReflection += thisWeight * vec4(aroundReflection, 1);
             }
         }
         barrier();
-        vec4 thisMip1 = mip1[localCoord.x>>1][localCoord.y>>1] / 10000.0;
-        vec4 thisMip2 = mip2[localCoord.x>>2][localCoord.y>>2] / 10000.0;
-        vec4 resultingReflection = lobeSize > 4.0 ? (lobeSize > 8.0 ? thisMip2 : thisMip1) : filteredReflection;
-        imageStore(colorimg8, coord, resultingReflection / (max(resultingReflection.w, 1e-3) * max(thisReflection.a, 0.1)));
+        imageStore(colorimg8, coord, filteredReflection / (max(filteredReflection.w, 1e-3)));
     #endif
 }
 

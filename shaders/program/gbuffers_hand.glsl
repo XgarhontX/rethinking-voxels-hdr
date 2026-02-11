@@ -101,7 +101,14 @@ void main() {
         albedo.r = texelFetch(colortex4, ivec2(gl_FragCoord.xy), 0).r;
     }
 
-    if (color.a > 0.00001) {
+
+    float alphaCheck = color.a;
+    #ifdef DO_PIXELATION_EFFECTS
+        // Fixes artifacts on fragment edges with non-nvidia gpus
+        alphaCheck = max(fwidth(color.a), alphaCheck);
+    #endif
+
+    if (alphaCheck > 0.001) {
         #ifdef GENERATED_NORMALS
             vec3 colorP = color.rgb;
         #endif
@@ -114,7 +121,7 @@ void main() {
 
         if (color.a < 0.75) materialMask = 0.0;
 
-        bool noSmoothLighting = true, noGeneratedNormals = false;
+        bool noSmoothLighting = true, noGeneratedNormals = false, noDirectionalShading = false, noVanillaAO = false;
         float smoothnessG = 0.0, highlightMult = 1.0, emission = 0.0, noiseFactor = 0.6;
         vec2 lmCoordM = lmCoord;
         vec3 geoNormal = normalM;
@@ -145,8 +152,8 @@ void main() {
             #endif
         #endif
 
-        DoLighting(color, shadowMult, playerPos, viewPos, 0.0, geoNormal, normalM,
-                   worldGeoNormal, lmCoordM, noSmoothLighting, false, false,
+        DoLighting(color, shadowMult, playerPos, viewPos, 0.0, geoNormal, normalM, 0.5,
+                   worldGeoNormal, lmCoordM, noSmoothLighting, noDirectionalShading, noVanillaAO,
                    false, 0, smoothnessG, materialMask, highlightMult, emission);
 
         #if defined IPBR && defined IS_IRIS
