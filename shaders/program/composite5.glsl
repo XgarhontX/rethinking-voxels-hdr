@@ -4,6 +4,7 @@
 
 //Common//
 #include "/lib/common.glsl"
+#include "/renodx.glsl"
 
 //////////Fragment Shader//////////Fragment Shader//////////Fragment Shader//////////
 #ifdef FRAGMENT_SHADER
@@ -149,7 +150,9 @@ void main() {
         color *= 0.01;
     #endif
 
-    DoBSLTonemap(color);
+    // DoBSLTonemap(color);
+    color = T_EXPOSURE * color;
+    color = pow(color, vec3(1.0 / 2.2));
 
     #if defined GREEN_SCREEN_LIME || SELECT_OUTLINE == 4
         int materialMaskInt = int(texelFetch(colortex6, texelCoord, 0).g * 255.1);
@@ -177,6 +180,9 @@ void main() {
 
     float filmGrain = dither;
     color += vec3((filmGrain - 0.25) / 128.0);
+
+    color = pow(color, vec3(2.2));
+    color = ToneMapPass(color, vec3(0), texCoord);
 
     /* DRAWBUFFERS:3 */
     gl_FragData[0] = vec4(color, 1.0);

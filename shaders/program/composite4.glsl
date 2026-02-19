@@ -71,6 +71,7 @@ void main() {
 
     /* DRAWBUFFERS:3 */
     gl_FragData[0] = vec4(blur, 1.0);
+    gl_FragData[0] = max(vec4(0.0), gl_FragData[0]);
 }
 
 #endif

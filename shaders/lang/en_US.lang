@@ -1526,3 +1526,237 @@ option.DEBRIS_COL_B=Blue
 option.RESIN_COL_R=Red
 option.RESIN_COL_G=Green
 option.RESIN_COL_B=Blue
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# RenoDX Screens
+screen.renodx = RenoDX
+screen.renodx_reinhard = Reinhard Piecewise Settings
+screen.renodx_reinhard.comment = Gradually roll off highlights to peak.
+screen.renodx_aces = ACES Settings
+screen.renodx_aces.comment = Contrast and blowout via ACES color space.
+screen.renodx_gt = Gran Turismo Sport Settings
+screen.renodx_gt.comment = ACES-like contrast, very clippy with a fully linear section.
+screen.renodx_gt7 = Gran Turismo 7 Settings
+screen.renodx_gt7.comment = Similar to GTSport, but perceptual in BT2020.
+screen.renodx_hermite = Hermite Spline Settings
+screen.renodx_hermite.comment = Scalable spline.
+screen.renodx_hable = Uncharted 2 / Hable Settings
+screen.renodx_hable.comment = From Uncharted 2 by John Hable, with toe, linear extended to HDR.
+screen.renodx_exproll = Exponential Roll-off Settings
+screen.renodx_exproll.comment = By DICE, aggressive shoulder roll-off.
+screen.renodx_neutwo = NeuTwo Settings
+screen.renodx_neutwo.comment = Neutral tonemapper based on power of 2 (squared/sqrt).
+screen.renodx_frostbite = Frostbite Settings
+screen.renodx_frostbite.comment = DICE's perceptual tonemapper with saturation boost and hue preservation.
+screen.renodx_daniele = Daniele Settings
+screen.renodx_daniele.comment = Daniele Siragusano's compression curve with a lot of variables. 
+
+# RenoDX Main
+option.RENODX_ENABLED = Enabled
+option.RENODX_ENABLED.comment = Enable HDR.
+
+option.RENODX_BRIGHTNESS_USEREPORTED = Use Reported Brightness
+option.RENODX_BRIGHTNESS_USEREPORTED.comment = Use values from mods that report the display's capabilities, automatically configuring brightness values. (If sliders don't work, then values are found.)
+value.RENODX_BRIGHTNESS_USEREPORTED.RENODX_BRIGHTNESS_USEREPORTED_ON = If Available
+value.RENODX_BRIGHTNESS_USEREPORTED.RENODX_BRIGHTNESS_USEREPORTED_OFF = Off
+
+option.RENODX_UI_BRIGHTNESS = UI Brightness
+option.RENODX_UI_BRIGHTNESS.comment = In nits. Requires a shader after UI for this to take effect (i.e. ReShade, remember to sync value.)
+
+option.RENODX_GAME_BRIGHTNESS = Game Brightness
+option.RENODX_GAME_BRIGHTNESS.comment = In nits, aka paper white.
+
+option.RENODX_PEAK_BRIGHTNESS = Peak Brightness
+option.RENODX_PEAK_BRIGHTNESS.comment = Maximum brightness in nits.
+
+option.RENODX_SHOULDER_START = Shoulder Start
+option.RENODX_SHOULDER_START.comment = Beginning of tonemap's shoulder in nits.
+
+option.RENODX_WHITE_CLIP = White Clip Threshold
+option.RENODX_WHITE_CLIP.comment = Aka the expected maximum of color to tonemap.
+
+option.RENODX_CLAMP_COLORSPACE = Color Space Clamp
+option.RENODX_CLAMP_COLORSPACE.comment = Clamp right at final output.
+value.RENODX_CLAMP_COLORSPACE.RENODX_CS_NONE    = None
+value.RENODX_CLAMP_COLORSPACE.RENODX_CS_BT709   = BT709
+value.RENODX_CLAMP_COLORSPACE.RENODX_CS_BT2020  = BT2020
+value.RENODX_CLAMP_COLORSPACE.RENODX_CS_AP1     = AP1
+
+option.RENODX_GAMMACORRECTION = Gamma Correction
+option.RENODX_GAMMACORRECTION.comment = Apply EOTF / Gamma Correction before tonemapping. This is a last resort solution, since UI is not included!
+value.RENODX_GAMMACORRECTION.RENODX_GAMMA_NONE = Off
+value.RENODX_GAMMACORRECTION.RENODX_GAMMA_22  = 2.2
+value.RENODX_GAMMACORRECTION.RENODX_GAMMA_24 = 2.4
+
+option.RENODX_COLORGRADE_CONTRAST = Contrast
+option.RENODX_COLORGRADE_CONTRAST.comment = Stretches luminance both ways around mid gray.
+option.RENODX_COLORGRADE_CONTRAST_MID = Contrast Mid Gray
+option.RENODX_COLORGRADE_CONTRAST_MID.comments = The pivot point of the effect.
+
+option.RENODX_COLORGRADE_HIGHLIGHTS = Highlights
+option.RENODX_COLORGRADE_HIGHLIGHTS.comment = Stretches luminance if above mid gray.
+option.RENODX_COLORGRADE_HIGHLIGHTS_MID = Highlights Mid Gray
+option.RENODX_COLORGRADE_HIGHLIGHTS_MID.comments = The pivot point of the effect.
+
+option.RENODX_COLORGRADE_SHADOWS = Shadows
+option.RENODX_COLORGRADE_SHADOWS.comment = Stretches luminance if below mid gray.
+option.RENODX_COLORGRADE_SHADOWS_MID = Shadows Mid Gray
+option.RENODX_COLORGRADE_SHADOWS_MID.comments = The pivot point of the effect.
+
+option.RENODX_COLORGRADE_SATURATION = Saturation
+option.RENODX_COLORGRADE_SATURATION.comment = OKLab saturation, in percentage. 100 is disabled.
+
+option.RENODX_RCAS = RCAS
+option.RENODX_RCAS.comment = Robust (4 samples) Constrast Adaptive Sharpening
+
+option.RENODX_RCAS_DENOISE = RCAS Denoise
+option.RENODX_RCAS.comment = Turn on RCAS's additional denoising.
+
+# RenoDX Debug
+option.RENODX_DEBUG = Debug Output
+value.RENODX_DEBUG.RENODX_DEBUG_NONE = None
+value.RENODX_DEBUG.RENODX_DEBUG_UNTONEMAPPED = Untonemapped
+value.RENODX_DEBUG.RENODX_DEBUG_TONEMAPPED = Tonemapped
+value.RENODX_DEBUG.RENODX_DEBUG_SPLIT = Untonemapped / Tonemapped
+
+option.RENODX_WORKINGCOLORSPACE = Working Color Space
+option.RENODX_WORKINGCOLORSPACE.comment = The color space of the shaderpack's rendering pipeline.
+
+# RenoDX Upgrade
+option.RENODX_UPGRADE_ENABLED = Upgrade Tone Map
+option.RENODX_UPGRADE_ENABLED.comment = (BT709 Clamp, and maybe not available.) Naively map SDR chroma on HDR luma. This maintains all of SDR colorgrading, but will be quick to blowout.
+
+option.RENODX_UPGRADE_AMOUNT = Upgrade Amount
+option.RENODX_UPGRADE_AMOUNT.comment = How much should the HDR color be influenced by the SDR?
+
+option.RENODX_UPGRADE_AUTO = Upgrade Auto Correct
+option.RENODX_UPGRADE_AUTO.comment = How much should the HDR color be corrected by the SDR?
+
+option.RENODX_APPC_AMOUNT = Per Channel Correction Amount
+option.RENODX_APPC_AMOUNT.comment = (w/ Upgrade Tone Map) Attempt to reverse the blowout of SDR tonemapper. 
+option.RENODX_APPC_POW = Per Channel Correction Highlights Only
+option.RENODX_APPC_POW.comment = (w/ Upgrade Tone Map) Increase to target only highlights.
+
+# RenoDX HDR Tone Map
+option.RENODX_EXPOSURE = Exposure
+option.RENODX_EXPOSURE.comment = Mutltiplier on color right before HDR Tone Map.
+
+value.RENODX_SCALING.RENODX_SCALING_Y = Luminance
+value.RENODX_SCALING.RENODX_SCALING_PERCHANNEL = Per Channel or Perceptual
+value.RENODX_SCALING.RENODX_SCALING_MAXCHANNEL = Max Channel
+value.RENODX_SCALING.RENODX_SCALING_AUTO = Automatic
+option.RENODX_SCALING = Scaling
+option.RENODX_SCALING.comment = Run the tonemapper for all rgb channels (blows out) or base it off of a pivot (luma or max channel)?
+
+option.RENODX_HDRTONEMAP_TYPE = HDR Tone Map Type
+option.RENODX_HDRTONEMAP_TYPE.comment = Read tooltip of each!
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_OFF = Off
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_REINHARD = Reinhard Piecewise
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_ACES = ACES
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_GT = Gran Turismo Sport
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_HERMITE = Hermite Spline
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_GT7 = Gran Turismo 7
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_HABLE = Uncharted 2 / Hable
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_EXPROLL = Exponential Roll-off
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_NEUTWO = NeuTwo
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_FROSTBITE = Frostbite
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_DANIELE = Daniele
+value.RENODX_HDRTONEMAP_TYPE.RENODX_HDRTONEMAP_TYPE_DEFAULT = Default
+
+option.RENODX_WORKINGCS_HDRTONEMAP = HDR Tone Map Working Color Space
+option.RENODX_WORKINGCS_HDRTONEMAP.comment = The working color space of the tonemapper. The wider you go, the more blowout with maybe weird hue shift.
+value.RENODX_WORKINGCS_HDRTONEMAP.RENODX_CS_BT709   = BT709
+value.RENODX_WORKINGCS_HDRTONEMAP.RENODX_CS_BT2020  = BT2020
+value.RENODX_WORKINGCS_HDRTONEMAP.RENODX_CS_AP1     = AP1
+
+# RenoDX ACES
+option.RENODX_ACES_RGC = Gamut Compression Blowout
+option.RENODX_ACES_RGC.comment = Compressed color gamut, causing the ACES hue shift blowout.
+
+option.RENODX_ACES_RRT = Reference Rendering Transform
+option.RENODX_ACES_RRT.comment = Prepare colors for Output Device.
+
+option.RENODX_ACES_MIDGRAY = Mid Gray
+option.RENODX_ACES_MIDGRAY.comment = Mid gray output target.
+
+# RenoDX GT
+option.RENODX_GT_A = Contrast
+option.RENODX_GT_A.comment = Effectively pow(color, contrast).
+
+option.RENODX_GT_M = Linear Section Start (Mid Gray)
+option.RENODX_GT_M.comment = Aka the end of toe.
+
+option.RENODX_GT_L = Linear Section Length
+option.RENODX_GT_L.comment = The length of the linear section before shoulder.
+
+option.RENODX_GT_C = Toe Contrast
+option.RENODX_GT_C.comment = How aggressive should toe pull colors to black?
+
+option.RENODX_GT_B = Black Floor Raise
+option.RENODX_GT_B.comment = Raises the black floor.
+
+# RenoDX GT7
+option.RENODX_GT7_A = White Clip Strength
+option.RENODX_GT7_A.comment = Mask to clip highlights.
+
+option.RENODX_GT7_M = Gray Point
+option.RENODX_GT7_M.comment = Gray point for toe end.
+
+option.RENODX_GT7_L = Linear Section Length
+option.RENODX_GT7_L.comment = The length of the linear section before shoulder.
+
+option.RENODX_GT7_C = Toe Contrast
+option.RENODX_GT7_C.comment = How aggressive should toe pull colors to black.
+
+option.RENODX_GT7_BLOW_AMOUNT = Blowout Amount
+option.RENODX_GT7_BLOW_AMOUNT.comment = Blend intensity of chroma blowout.
+
+option.RENODX_GT7_BLOW_START = Blowout Start
+option.RENODX_GT7_BLOW_START.comment = Start of chroma blowout.
+
+option.RENODX_GT7_BLOW_END = Blowout End
+option.RENODX_GT7_BLOW_END.comment = End of chroma blowout.
+
+#Hable
+option.RENODX_HABLE_A = Shoulder Strength
+option.RENODX_HABLE_B = Linear Section Strength
+option.RENODX_HABLE_C = Linear Angle
+option.RENODX_HABLE_D = Toe Strength
+option.RENODX_HABLE_E = Toe Numerator
+option.RENODX_HABLE_F = Toe Denominator
+option.RENODX_HABLE_W = White Point
+option.RENODX_HABLE_BLOWOUT = Blowout
+option.RENODX_HABLE_BLOWOUT.comment = Blend SDR blowout on hightlights.
+
+#Frostbite
+option.RENODX_FROSTBITE_SAT = Saturation Boost
+option.RENODX_FROSTBITE_HUE = Hue Preservation
+
+#Daniele
+option.RENODX_DANIELE_G = Surround/Contrast
+option.RENODX_DANIELE_C = Scene-referred Gray
+option.RENODX_DANIELE_C_D = Output Gray in nits
+option.RENODX_DANIELE_W_G = Gray Change
+option.RENODX_DANIELE_T_1 = Shadow Toe
+option.RENODX_DANIELE_R_HIT_MIN = Minimum Hit Nits
+option.RENODX_DANIELE_R_HIT_MAX = Maximum Hit Nits
+
+#RenderIntermediatePass
+option.RENODX_INTER_MODE = Intermediate Pass Mode
+option.RENODX_INTER_MODE.comment = Encode color (eotf and colorspace) to what the final output is expected to be. Leave sRGB, unless something is super wrong!
+value.RENODX_INTER_MODE.RENODX_INTER_MODE_SRGB = sRGB (BT709)
+value.RENODX_INTER_MODE.RENODX_INTER_MODE_SCRGB = scRGB @ 203nits (BT709)
+value.RENODX_INTER_MODE.RENODX_INTER_MODE_HDR10 = HDR10 @ 203nits (BT2020)

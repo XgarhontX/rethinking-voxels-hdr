@@ -153,6 +153,7 @@ void main() {
 
     /* DRAWBUFFERS:0 */
     gl_FragData[0] = vec4(color, 1.0);
+    gl_FragData[0] = max(vec4(0.0), gl_FragData[0]);
 }
 
 #endif

@@ -229,6 +229,8 @@ void main() {
         /* DRAWBUFFERS:04 */
         gl_FragData[1] = vec4(vlFactorM, tex4Data.gba);
     #endif
+
+    gl_FragData[0] = max(vec4(0.0), gl_FragData[0]);
 }
 
 #endif

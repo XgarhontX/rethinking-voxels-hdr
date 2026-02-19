@@ -2,7 +2,7 @@
 const int colortex0Format = R11F_G11F_B10F; //main color
 const int colortex1Format = R32F;           //previous depth
 const int colortex2Format = RGB16F;         //taa
-const int colortex3Format = RGBA8;          //(cloud/water map on deferred/gbuffer) | translucentMult & bloom & final color
+const int colortex3Format = RGB16F;          //(cloud/water map on deferred/gbuffer) | translucentMult & bloom & final color
 const int colortex4Format = RGBA8;          //volumetric cloud linear depth & volumetric light factor & normalM in composite
 const int colortex5Format = RGBA8_SNORM;    //normalM & scene image for water reflections
 const int colortex6Format = RGBA8;          //smoothnessD & materialMask & skyLightFactor
