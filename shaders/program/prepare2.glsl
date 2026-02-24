@@ -11,7 +11,7 @@ uniform sampler2D colortex10;
 
 layout(rgba16f) uniform image2D colorimg8;
 #ifdef BLOCKLIGHT_HIGHLIGHT
-    layout(rgba8) uniform image2D colorimg3;
+    layout(rgba16f) uniform image2D colorimg3;
 #endif
 layout(r32ui) uniform restrict readonly uimage2D colorimg9;
 
